@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emotion Classification</title>
+    <title>Mental Health Assistant</title>
     <style>
         * {
             margin: 0;
@@ -13,122 +13,57 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background-color: #f5f5f5;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
         }
 
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 600px;
+        .chat-container {
             width: 100%;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            text-align: center;
-            font-size: 2.5em;
-        }
-
-        .subtitle {
-            color: #666;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 1em;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 120px;
-            transition: border-color 0.3s;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .button-group {
+            max-width: 800px;
+            height: 90vh;
+            max-height: 900px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        button {
-            flex: 1;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .predict-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .chat-header {
+            background-color: #2c3e50;
             color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
         }
 
-        .predict-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background-color: #fafafa;
         }
 
-        .predict-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .clear-btn {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        .clear-btn:hover {
-            background: #e0e0e0;
-        }
-
-        .result {
-            display: none;
-            padding: 25px;
-            border-radius: 10px;
-            margin-top: 20px;
-            animation: fadeIn 0.5s;
-        }
-
-        .result.show {
-            display: block;
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 75%;
+            animation: fadeIn 0.3s ease-in;
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(-10px);
+                transform: translateY(10px);
             }
             to {
                 opacity: 1;
@@ -136,350 +71,296 @@
             }
         }
 
-        .result.happiness {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.user .message-bubble {
+            background-color: #3498db;
             color: white;
+            border-bottom-right-radius: 4px;
         }
 
-        .result.sadness {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
+        .message.assistant .message-bubble {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            border-bottom-left-radius: 4px;
         }
 
-        .result.anger {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            color: white;
+        .message-meta {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-top: 4px;
+            padding: 0 4px;
         }
 
-        .result.fear {
-            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
-            color: white;
-        }
-
-        .result.love {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .result.disgust {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-        }
-
-        .result.neutral {
-            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-            color: #333;
-        }
-
-        .emotion-label {
-            font-size: 2em;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-transform: capitalize;
-        }
-
-        .confidence {
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            opacity: 0.9;
-        }
-
-        .probabilities {
-            margin-top: 15px;
-        }
-
-        .probabilities h3 {
-            font-size: 1em;
-            margin-bottom: 10px;
-            opacity: 0.9;
-        }
-
-        .prob-bar {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .prob-label {
-            min-width: 100px;
-            font-size: 0.9em;
-            text-transform: capitalize;
-        }
-
-        .prob-bar-container {
-            flex: 1;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            margin: 0 10px;
-            overflow: hidden;
-        }
-
-        .prob-bar-fill {
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 10px;
-            transition: width 0.5s;
-        }
-
-        .prob-value {
-            min-width: 50px;
+        .message.user .message-meta {
             text-align: right;
-            font-size: 0.9em;
-            font-weight: 600;
         }
 
-        .loading {
-            display: none;
-            text-align: center;
+        .input-container {
             padding: 20px;
-            color: #667eea;
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
         }
 
-        .loading.show {
-            display: block;
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
 
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+        .input-field {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .input-field:focus {
+            border-color: #3498db;
         }
 
-        .error {
-            background: #ff6b6b;
+        .send-button {
+            padding: 14px 28px;
+            background-color: #3498db;
             color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            display: none;
+            border: none;
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
 
-        .error.show {
-            display: block;
+        .send-button:hover:not(:disabled) {
+            background-color: #2980b9;
         }
 
-        .api-url {
-            font-size: 0.85em;
-            color: #999;
-            text-align: center;
-            margin-top: 20px;
+        .send-button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .loading-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #95a5a6;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .error-message {
+            background-color: #e74c3c;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+        }
+
+        /* Scrollbar styling */
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #bdc3c7;
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #95a5a6;
+        }
+
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+
+            .message {
+                max-width: 85%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>😊 Emotion Classifier</h1>
-        <p class="subtitle">Enter text to detect the emotion</p>
-
-        <div class="input-group">
-            <label for="textInput">Enter your text:</label>
-            <textarea 
-                id="textInput" 
-                placeholder="Type or paste your text here... (e.g., 'I am feeling great today!')"
-            ></textarea>
+    <div class="chat-container">
+        <div class="chat-header">
+            Mental Health Assistant
         </div>
-
-        <div class="button-group">
-            <button class="predict-btn" id="predictBtn" onclick="predictEmotion()">
-                Predict Emotion
-            </button>
-            <button class="clear-btn" onclick="clearInput()">
-                Clear
-            </button>
-        </div>
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Analyzing emotion...</p>
-        </div>
-
-        <div class="error" id="error"></div>
-
-        <div class="result" id="result">
-            <div class="emotion-label" id="emotionLabel"></div>
-            <div class="confidence" id="confidence"></div>
-            <div class="probabilities">
-                <h3>All Probabilities:</h3>
-                <div id="probabilitiesList"></div>
+        
+        <div class="messages-container" id="messagesContainer">
+            <div class="message assistant">
+                <div class="message-bubble">
+                    Hello, I'm here to help. How are you feeling today?
+                </div>
             </div>
         </div>
-
-        <div class="api-url">
-            API: <span id="apiUrl">https://friday-nyc-med-purchased.trycloudflare.com</span>
-            <br>
-            <small id="proxyStatus" style="color: #28a745; font-size: 0.8em;">✓ Using HTTPS via Cloudflare Tunnel</small>
+        
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    class="input-field" 
+                    placeholder="Type your message..."
+                    autocomplete="off"
+                />
+                <button id="sendButton" class="send-button">Send</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // For GitHub Pages (HTTPS), we need to use HTTPS API or a CORS proxy
-        // Option 1: If you set up HTTPS for your API, use:
-        // const API_URL = 'https://yourdomain.com';
-        
-        // Option 2: Use a CORS proxy (temporary solution, not for production)
-        // Uncomment the line below and comment out the direct API_URL
-        // const API_URL = 'https://corsproxy.io/?http://34.211.115.236';
-        
-        // Option 3: Direct HTTP (only works when page is served over HTTP, not HTTPS)
-        // const API_URL = 'http://34.211.115.236';
-        
-        // API configuration
-        // Using Cloudflare Tunnel for HTTPS (works with GitHub Pages)
-        const API_BASE = 'https://friday-nyc-med-purchased.trycloudflare.com';
-        
-        // Detect if we're on GitHub Pages (HTTPS) or local (HTTP)
-        const isHTTPS = window.location.protocol === 'https:';
-        
-        // Simple function to make API request (now using HTTPS directly)
-        async function makeApiRequest(endpoint, data) {
-            const url = `${API_BASE}${endpoint}`;
-            return await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+        const API_URL = 'https://web-production-b5a52.up.railway.app/chat';
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        function addMessage(text, isUser = false, emotion = null, confidence = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            
+            messageDiv.appendChild(bubble);
+            
+            if (!isUser && emotion) {
+                const meta = document.createElement('div');
+                meta.className = 'message-meta';
+                meta.textContent = `Detected: ${emotion} (${(confidence * 100).toFixed(0)}% confidence)`;
+                messageDiv.appendChild(meta);
+            }
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Allow Enter key to trigger prediction (Ctrl/Cmd + Enter)
-        document.getElementById('textInput').addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                predictEmotion();
+        function addLoadingIndicator() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message assistant';
+            loadingDiv.id = 'loadingIndicator';
+            
+            const loadingBubble = document.createElement('div');
+            loadingBubble.className = 'message-bubble loading-indicator';
+            loadingBubble.innerHTML = `
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+            `;
+            
+            loadingDiv.appendChild(loadingBubble);
+            messagesContainer.appendChild(loadingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function removeLoadingIndicator() {
+            const loading = document.getElementById('loadingIndicator');
+            if (loading) {
+                loading.remove();
             }
-        });
+        }
 
-        async function predictEmotion() {
-            const textInput = document.getElementById('textInput');
-            const text = textInput.value.trim();
-            const predictBtn = document.getElementById('predictBtn');
-            const loading = document.getElementById('loading');
-            const result = document.getElementById('result');
-            const error = document.getElementById('error');
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
 
-            // Clear previous results
-            result.classList.remove('show');
-            error.classList.remove('show');
+            // Add user message
+            addMessage(message, true);
+            messageInput.value = '';
+            sendButton.disabled = true;
 
-            // Validate input
-            if (!text) {
-                showError('Please enter some text to analyze.');
-                return;
-            }
-
-            // Show loading state
-            loading.classList.add('show');
-            predictBtn.disabled = true;
-            predictBtn.textContent = 'Predicting...';
+            // Add loading indicator
+            addLoadingIndicator();
 
             try {
-                // Make the request (using HTTPS via Cloudflare Tunnel)
-                const response = await makeApiRequest('/predict', { text: text });
-
-                // Get response data
-                const data = await response.json();
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: message })
+                });
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to get prediction');
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                // Display result
-                displayResult(data);
+                const data = await response.json();
+                removeLoadingIndicator();
 
-            } catch (err) {
-                let errorMsg = err.message;
-                
-                // Provide helpful error messages
-                if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                    errorMsg = 'Unable to connect to API. Please check if the Cloudflare Tunnel is running on the server.';
+                if (data.error) {
+                    addMessage(`Sorry, I encountered an error: ${data.error}`, false);
+                } else {
+                    addMessage(data.response, false, data.emotion, data.confidence);
                 }
-                
-                showError(`Error: ${errorMsg}`);
+            } catch (error) {
+                removeLoadingIndicator();
+                addMessage(`Sorry, I'm having trouble connecting. Please try again.`, false);
+                console.error('Error:', error);
             } finally {
-                loading.classList.remove('show');
-                predictBtn.disabled = false;
-                predictBtn.textContent = 'Predict Emotion';
+                sendButton.disabled = false;
+                messageInput.focus();
             }
         }
 
-        function displayResult(data) {
-            const result = document.getElementById('result');
-            const emotionLabel = document.getElementById('emotionLabel');
-            const confidence = document.getElementById('confidence');
-            const probabilitiesList = document.getElementById('probabilitiesList');
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
 
-            // Set emotion class for styling
-            result.className = `result show ${data.predicted_emotion}`;
-
-            // Display main emotion
-            emotionLabel.textContent = `🎭 ${data.predicted_emotion}`;
-            confidence.textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
-
-            // Display all probabilities
-            probabilitiesList.innerHTML = '';
-            const sortedProbs = Object.entries(data.all_probabilities)
-                .sort((a, b) => b[1] - a[1]);
-
-            sortedProbs.forEach(([emotion, prob]) => {
-                const probBar = document.createElement('div');
-                probBar.className = 'prob-bar';
-                
-                const label = document.createElement('div');
-                label.className = 'prob-label';
-                label.textContent = emotion;
-
-                const barContainer = document.createElement('div');
-                barContainer.className = 'prob-bar-container';
-
-                const barFill = document.createElement('div');
-                barFill.className = 'prob-bar-fill';
-                barFill.style.width = `${prob * 100}%`;
-
-                const value = document.createElement('div');
-                value.className = 'prob-value';
-                value.textContent = `${(prob * 100).toFixed(1)}%`;
-
-                barContainer.appendChild(barFill);
-                probBar.appendChild(label);
-                probBar.appendChild(barContainer);
-                probBar.appendChild(value);
-                probabilitiesList.appendChild(probBar);
-            });
-
-            // Scroll to result
-            result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        function showError(message) {
-            const error = document.getElementById('error');
-            error.textContent = message;
-            error.classList.add('show');
-        }
-
-        function clearInput() {
-            document.getElementById('textInput').value = '';
-            document.getElementById('result').classList.remove('show');
-            document.getElementById('error').classList.remove('show');
-            document.getElementById('textInput').focus();
-        }
-
-        // Update proxy status on page load
-        window.addEventListener('load', () => {
-            document.getElementById('textInput').focus();
-            
-            // Show connection status
-            const proxyStatus = document.getElementById('proxyStatus');
-            proxyStatus.textContent = '✓ Using HTTPS via Cloudflare Tunnel';
-            proxyStatus.style.color = '#28a745';
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !sendButton.disabled) {
+                sendMessage();
+            }
         });
+
+        // Focus input on load
+        messageInput.focus();
     </script>
 </body>
 </html>
