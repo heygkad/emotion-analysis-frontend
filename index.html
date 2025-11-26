@@ -315,9 +315,9 @@
         </div>
 
         <div class="api-url">
-            API: <span id="apiUrl">http://34.211.115.236</span>
+            API: <span id="apiUrl">https://friday-nyc-med-purchased.trycloudflare.com</span>
             <br>
-            <small id="proxyStatus" style="color: #666; font-size: 0.8em;"></small>
+            <small id="proxyStatus" style="color: #28a745; font-size: 0.8em;">✓ Using HTTPS via Cloudflare Tunnel</small>
         </div>
     </div>
 
@@ -334,82 +334,16 @@
         // const API_URL = 'http://34.211.115.236';
         
         // API configuration
-        const API_BASE = 'http://34.211.115.236';
+        // Using Cloudflare Tunnel for HTTPS (works with GitHub Pages)
+        const API_BASE = 'https://friday-nyc-med-purchased.trycloudflare.com';
         
         // Detect if we're on GitHub Pages (HTTPS) or local (HTTP)
         const isHTTPS = window.location.protocol === 'https:';
         
-        // Simple function to make API request
+        // Simple function to make API request (now using HTTPS directly)
         async function makeApiRequest(endpoint, data) {
-            const targetUrl = `${API_BASE}${endpoint}`;
-            
-            // If on HTTPS (GitHub Pages), use a CORS proxy
-            if (isHTTPS) {
-                // Try using corsproxy.io which supports POST requests
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-                
-                try {
-                    const response = await fetch(proxyUrl, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    });
-                    
-                    // Get response text first
-                    const text = await response.text();
-                    
-                    // Check if proxy returned HTML (error page)
-                    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<!')) {
-                        // Try alternative proxy
-                        throw new Error('PROXY_ERROR');
-                    }
-                    
-                    // Try to parse as JSON
-                    let jsonData;
-                    try {
-                        jsonData = JSON.parse(text);
-                    } catch (e) {
-                        throw new Error(`Invalid JSON: ${text.substring(0, 100)}`);
-                    }
-                    
-                    // Return a response-like object
-                    return {
-                        ok: response.ok && !jsonData.error,
-                        status: response.ok ? response.status : (jsonData.error ? 500 : response.status),
-                        json: async () => jsonData,
-                        text: async () => text
-                    };
-                } catch (err) {
-                    // If first proxy fails, try allorigins.win
-                    if (err.message === 'PROXY_ERROR') {
-                        const altProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-                        const response = await fetch(altProxyUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(data)
-                        });
-                        
-                        const text = await response.text();
-                        if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-                            throw new Error('Both CORS proxies failed. Please set up HTTPS for your API.');
-                        }
-                        
-                        const jsonData = JSON.parse(text);
-                        return {
-                            ok: response.ok && !jsonData.error,
-                            status: response.ok ? response.status : 500,
-                            json: async () => jsonData,
-                            text: async () => text
-                        };
-                    }
-                    throw err;
-                }
-            }
-            
-            // Direct request for HTTP
-            return await fetch(targetUrl, {
+            const url = `${API_BASE}${endpoint}`;
+            return await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -447,7 +381,7 @@
             predictBtn.textContent = 'Predicting...';
 
             try {
-                // Make the request (automatically uses CORS proxy if on HTTPS)
+                // Make the request (using HTTPS via Cloudflare Tunnel)
                 const response = await makeApiRequest('/predict', { text: text });
 
                 // Get response data
@@ -464,13 +398,8 @@
                 let errorMsg = err.message;
                 
                 // Provide helpful error messages
-                if (err.message.includes('Failed to fetch') || err.message.includes('CORS')) {
-                    if (isHTTPS) {
-                        errorMsg = 'Unable to connect to API. The CORS proxy may be temporarily unavailable. ' +
-                                   'For a permanent solution, set up HTTPS for your API (see SETUP_HTTPS.md).';
-                    } else {
-                        errorMsg = 'Unable to connect to API. Please check if the server is running.';
-                    }
+                if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                    errorMsg = 'Unable to connect to API. Please check if the Cloudflare Tunnel is running on the server.';
                 }
                 
                 showError(`Error: ${errorMsg}`);
@@ -546,15 +475,10 @@
         window.addEventListener('load', () => {
             document.getElementById('textInput').focus();
             
-            // Show proxy status
+            // Show connection status
             const proxyStatus = document.getElementById('proxyStatus');
-            if (isHTTPS) {
-                proxyStatus.textContent = 'Using CORS proxy for GitHub Pages (HTTPS)';
-                proxyStatus.style.color = '#28a745';
-            } else {
-                proxyStatus.textContent = 'Direct connection (HTTP)';
-                proxyStatus.style.color = '#666';
-            }
+            proxyStatus.textContent = '✓ Using HTTPS via Cloudflare Tunnel';
+            proxyStatus.style.color = '#28a745';
         });
     </script>
 </body>
