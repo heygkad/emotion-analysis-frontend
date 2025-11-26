@@ -320,7 +320,19 @@
     </div>
 
     <script>
-        const API_URL = 'http://34.211.115.236';
+        // For GitHub Pages (HTTPS), we need to use HTTPS API or a CORS proxy
+        // Option 1: If you set up HTTPS for your API, use:
+        // const API_URL = 'https://yourdomain.com';
+        
+        // Option 2: Use a CORS proxy (temporary solution, not for production)
+        // Uncomment the line below and comment out the direct API_URL
+        // const API_URL = 'https://corsproxy.io/?http://34.211.115.236';
+        
+        // Option 3: Direct HTTP (only works when page is served over HTTP, not HTTPS)
+        // const API_URL = 'http://34.211.115.236';
+        
+        // Using CORS proxy for GitHub Pages (HTTPS -> HTTP compatibility)
+        const API_URL = 'https://corsproxy.io/?http://34.211.115.236';
 
         // Allow Enter key to trigger prediction (Ctrl/Cmd + Enter)
         document.getElementById('textInput').addEventListener('keydown', function(e) {
@@ -371,7 +383,16 @@
                 displayResult(data);
 
             } catch (err) {
-                showError(`Error: ${err.message}. Please check if the API is running.`);
+                let errorMsg = err.message;
+                
+                // Check if it's a mixed content error (HTTPS page trying to access HTTP API)
+                if (err.message.includes('Failed to fetch') || err.message.includes('Mixed Content')) {
+                    errorMsg = 'Mixed Content Error: This page is served over HTTPS, but the API is HTTP. ' +
+                               'Browsers block HTTP requests from HTTPS pages. ' +
+                               'Please set up HTTPS for your API or use the local version of this page.';
+                }
+                
+                showError(`Error: ${errorMsg}`);
             } finally {
                 loading.classList.remove('show');
                 predictBtn.disabled = false;
