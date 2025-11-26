@@ -316,6 +316,8 @@
 
         <div class="api-url">
             API: <span id="apiUrl">http://34.211.115.236</span>
+            <br>
+            <small id="proxyStatus" style="color: #666; font-size: 0.8em;"></small>
         </div>
     </div>
 
@@ -331,8 +333,88 @@
         // Option 3: Direct HTTP (only works when page is served over HTTP, not HTTPS)
         // const API_URL = 'http://34.211.115.236';
         
-        // Using CORS proxy for GitHub Pages (HTTPS -> HTTP compatibility)
-        const API_URL = 'https://corsproxy.io/?http://34.211.115.236';
+        // API configuration
+        const API_BASE = 'http://34.211.115.236';
+        
+        // Detect if we're on GitHub Pages (HTTPS) or local (HTTP)
+        const isHTTPS = window.location.protocol === 'https:';
+        
+        // Simple function to make API request
+        async function makeApiRequest(endpoint, data) {
+            const targetUrl = `${API_BASE}${endpoint}`;
+            
+            // If on HTTPS (GitHub Pages), use a CORS proxy
+            if (isHTTPS) {
+                // Try using corsproxy.io which supports POST requests
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+                
+                try {
+                    const response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    // Get response text first
+                    const text = await response.text();
+                    
+                    // Check if proxy returned HTML (error page)
+                    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<!')) {
+                        // Try alternative proxy
+                        throw new Error('PROXY_ERROR');
+                    }
+                    
+                    // Try to parse as JSON
+                    let jsonData;
+                    try {
+                        jsonData = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error(`Invalid JSON: ${text.substring(0, 100)}`);
+                    }
+                    
+                    // Return a response-like object
+                    return {
+                        ok: response.ok && !jsonData.error,
+                        status: response.ok ? response.status : (jsonData.error ? 500 : response.status),
+                        json: async () => jsonData,
+                        text: async () => text
+                    };
+                } catch (err) {
+                    // If first proxy fails, try allorigins.win
+                    if (err.message === 'PROXY_ERROR') {
+                        const altProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                        const response = await fetch(altProxyUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        const text = await response.text();
+                        if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                            throw new Error('Both CORS proxies failed. Please set up HTTPS for your API.');
+                        }
+                        
+                        const jsonData = JSON.parse(text);
+                        return {
+                            ok: response.ok && !jsonData.error,
+                            status: response.ok ? response.status : 500,
+                            json: async () => jsonData,
+                            text: async () => text
+                        };
+                    }
+                    throw err;
+                }
+            }
+            
+            // Direct request for HTTP
+            return await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        }
 
         // Allow Enter key to trigger prediction (Ctrl/Cmd + Enter)
         document.getElementById('textInput').addEventListener('keydown', function(e) {
@@ -365,14 +447,10 @@
             predictBtn.textContent = 'Predicting...';
 
             try {
-                const response = await fetch(`${API_URL}/predict`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ text: text })
-                });
+                // Make the request (automatically uses CORS proxy if on HTTPS)
+                const response = await makeApiRequest('/predict', { text: text });
 
+                // Get response data
                 const data = await response.json();
 
                 if (!response.ok) {
@@ -385,11 +463,14 @@
             } catch (err) {
                 let errorMsg = err.message;
                 
-                // Check if it's a mixed content error (HTTPS page trying to access HTTP API)
-                if (err.message.includes('Failed to fetch') || err.message.includes('Mixed Content')) {
-                    errorMsg = 'Mixed Content Error: This page is served over HTTPS, but the API is HTTP. ' +
-                               'Browsers block HTTP requests from HTTPS pages. ' +
-                               'Please set up HTTPS for your API or use the local version of this page.';
+                // Provide helpful error messages
+                if (err.message.includes('Failed to fetch') || err.message.includes('CORS')) {
+                    if (isHTTPS) {
+                        errorMsg = 'Unable to connect to API. The CORS proxy may be temporarily unavailable. ' +
+                                   'For a permanent solution, set up HTTPS for your API (see SETUP_HTTPS.md).';
+                    } else {
+                        errorMsg = 'Unable to connect to API. Please check if the server is running.';
+                    }
                 }
                 
                 showError(`Error: ${errorMsg}`);
@@ -461,9 +542,19 @@
             document.getElementById('textInput').focus();
         }
 
-        // Focus on text input when page loads
+        // Update proxy status on page load
         window.addEventListener('load', () => {
             document.getElementById('textInput').focus();
+            
+            // Show proxy status
+            const proxyStatus = document.getElementById('proxyStatus');
+            if (isHTTPS) {
+                proxyStatus.textContent = 'Using CORS proxy for GitHub Pages (HTTPS)';
+                proxyStatus.style.color = '#28a745';
+            } else {
+                proxyStatus.textContent = 'Direct connection (HTTP)';
+                proxyStatus.style.color = '#666';
+            }
         });
     </script>
 </body>
